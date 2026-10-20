@@ -1,29 +1,32 @@
 -- ==============================================
--- SENSI CHAKA V2 • @unrandom_tk
+-- SENSI CHAKA V2 • REPARADO UNIVERSAL
 -- ==============================================
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-local StarterGui = game:GetService("StarterGui")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
-
 local LP = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local MainConnection = nil
 
+-- Selección de parent
 local parent
 pcall(function() parent = gethui() end)
 if not parent then pcall(function() parent = CoreGui end) end
 if not parent then parent = LP:WaitForChild("PlayerGui") end
 
+-- Limpiar versiones anteriores
 pcall(function()
 	for _, v in pairs(parent:GetChildren()) do
 		if v.Name == "SensiChakaV2" or v.Name == "SensiChakaV2Intro" then v:Destroy() end
 	end
 end)
 
+-- Detectar si tenemos Drawing
+local HasDrawing = pcall(function() return Drawing ~= nil end)
+
+-- Crear GUI principal
 local gui = Instance.new("ScreenGui")
 gui.Name = "SensiChakaV2"
 gui.ResetOnSpawn = false
@@ -32,6 +35,7 @@ gui.DisplayOrder = 999999
 gui.IgnoreGuiInset = true
 gui.Parent = parent
 
+-- Intro
 local function PlayIntro()
 	local intro = Instance.new("ScreenGui")
 	intro.Name = "SensiChakaV2Intro"
@@ -39,19 +43,16 @@ local function PlayIntro()
 	intro.DisplayOrder = 9999999
 	intro.IgnoreGuiInset = true
 	intro.Parent = parent
-
 	local bg = Instance.new("Frame")
 	bg.Size = UDim2.new(1, 0, 1, 0)
 	bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	bg.BackgroundTransparency = 1
 	bg.Parent = intro
-
 	local container = Instance.new("Frame")
 	container.Size = UDim2.new(0, 600, 0, 200)
 	container.Position = UDim2.new(0.5, -300, 0.5, -100)
 	container.BackgroundTransparency = 1
 	container.Parent = intro
-
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1, 0, 0, 90)
 	title.BackgroundTransparency = 1
@@ -65,77 +66,48 @@ local function PlayIntro()
 	title.AnchorPoint = Vector2.new(0.5, 0.5)
 	title.Position = UDim2.new(0.5, 0, 0, 45)
 	title.Parent = container
-
-	local sub = Instance.new("TextLabel")
-	sub.Size = UDim2.new(1, 0, 0, 40)
-	sub.Position = UDim2.new(0, 0, 0, 95)
-	sub.BackgroundTransparency = 1
-	sub.Text = "@unrandom_tk"
-	sub.Font = Enum.Font.GothamBold
-	sub.TextSize = 28
-	sub.TextColor3 = Color3.fromRGB(255, 220, 180)
-	sub.TextStrokeTransparency = 0.3
-	sub.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	sub.TextTransparency = 1
-	sub.Parent = container
-
-	local line = Instance.new("Frame")
-	line.Size = UDim2.new(0, 0, 0, 3)
-	line.Position = UDim2.new(0.5, 0, 0, 145)
-	line.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-	line.Parent = container
-
 	local tweenIn = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 	local tweenOut = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-	local tweenLine = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-
 	task.wait(0.2)
 	TweenService:Create(bg, tweenIn, {BackgroundTransparency = 0.7}):Play()
-	task.wait(0.15)
 	TweenService:Create(title, tweenIn, {TextTransparency = 0}):Play()
-	task.wait(0.25)
-	TweenService:Create(sub, tweenIn, {TextTransparency = 0}):Play()
-	task.wait(0.2)
-	TweenService:Create(line, tweenLine, {Size = UDim2.new(0.6, 0, 0, 3), Position = UDim2.new(0.2, 0, 0, 145)}):Play()
-	task.wait(2.5)
+	task.wait(2)
 	TweenService:Create(title, tweenOut, {TextTransparency = 1}):Play()
-	TweenService:Create(sub, tweenOut, {TextTransparency = 1}):Play()
-	TweenService:Create(line, tweenOut, {Size = UDim2.new(0, 0, 0, 3)}):Play()
 	TweenService:Create(bg, tweenOut, {BackgroundTransparency = 1}):Play()
-	task.wait(0.7)
+	task.wait(0.5)
 	intro:Destroy()
 end
 task.spawn(PlayIntro)
 
-pcall(function()
-	StarterGui:SetCore("SendNotification", {Title = "SENSI CHAKA V2", Text = "Cargado correctamente", Duration = 3})
-end)
-
+-- Configuración
 local S = {
 	ESP = false, Box = true, Name = true, Dist = true, Health = true, Tracer = true,
 	ESPColor = Color3.fromRGB(255, 140, 0), Chams = false, Rainbow = false,
 	Aimbot = false, Legit = false, Rage = false, AimKill = false,
 	AimPart = "Head", FOV = 120, ShowFOV = true, WallCheck = true, TeamCheck = true
 }
-
 local AimPartsList = {"Head", "Torso", "Root"}
 local AimPartNames = {Head = "Cabeza", Torso = "Torso", Root = "Centro"}
 local aimIndex = 1
 local ESPObjects, ChamsObjects = {}, {}
 local FOVCircle = nil
 
-pcall(function()
-	if Drawing then
+-- Círculo FOV
+local function UpdateFOV()
+	if not HasDrawing then return end
+	if not FOVCircle then
 		FOVCircle = Drawing.new("Circle")
 		FOVCircle.Thickness = 1.5
 		FOVCircle.NumSides = 60
-		FOVCircle.Radius = S.FOV
-		FOVCircle.Color = S.ESPColor
-		FOVCircle.Visible = false
 		FOVCircle.Filled = false
 	end
-end)
+	local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+	FOVCircle.Position = center
+	FOVCircle.Radius = S.FOV
+	FOVCircle.Visible = S.ShowFOV and (S.Aimbot or S.Legit or S.Rage or S.AimKill)
+end
 
+-- Panel
 local Main = Instance.new("Frame")
 Main.Size = UDim2.new(0, 270, 0, 400)
 Main.Position = UDim2.new(0.5, -135, 0.5, -200)
@@ -144,7 +116,6 @@ Main.Active = true
 Main.Draggable = true
 Main.Parent = gui
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
-
 local stroke = Instance.new("UIStroke")
 stroke.Color = Color3.fromRGB(255, 140, 0)
 stroke.Thickness = 2
@@ -212,6 +183,7 @@ local function MakeBtn(text, y, on)
 	return b
 end
 
+-- Botones
 local BESP = MakeBtn("ESP Master", 8, false)
 local BBox = MakeBtn("Caja 2D", 54, true)
 local BName = MakeBtn("Nombres", 100, true)
@@ -225,10 +197,12 @@ local BKill = MakeBtn("AimKill", 438, false)
 local BFOV = MakeBtn("Mostrar FOV", 484, true)
 local BWall = MakeBtn("WallCheck", 530, true)
 local BTeam = MakeBtn("TeamCheck", 576, true)
+local BChams = MakeBtn("Chams", 622, false)
+local BRainbow = MakeBtn("Modo Arcoíris", 668, false)
 
 local BAimPart = Instance.new("TextButton")
 BAimPart.Size = UDim2.new(1, -8, 0, 38)
-BAimPart.Position = UDim2.new(0, 4, 0, 622)
+BAimPart.Position = UDim2.new(0, 4, 0, 714)
 BAimPart.BackgroundColor3 = Color3.fromRGB(80, 40, 120)
 BAimPart.Text = "Apunta a: Cabeza"
 BAimPart.Font = Enum.Font.GothamBold
@@ -239,7 +213,7 @@ Instance.new("UICorner", BAimPart).CornerRadius = UDim.new(0, 8)
 
 local FOVLbl = Instance.new("TextLabel")
 FOVLbl.Size = UDim2.new(1, -8, 0, 22)
-FOVLbl.Position = UDim2.new(0, 4, 0, 670)
+FOVLbl.Position = UDim2.new(0, 4, 0, 762)
 FOVLbl.BackgroundTransparency = 1
 FOVLbl.Text = "FOV: 120"
 FOVLbl.Font = Enum.Font.GothamBold
@@ -249,7 +223,7 @@ FOVLbl.Parent = Scroll
 
 local FOVDn = Instance.new("TextButton")
 FOVDn.Size = UDim2.new(0, 70, 0, 34)
-FOVDn.Position = UDim2.new(0, 4, 0, 700)
+FOVDn.Position = UDim2.new(0, 4, 0, 790)
 FOVDn.BackgroundColor3 = Color3.fromRGB(50, 30, 15)
 FOVDn.Text = "-"
 FOVDn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -260,54 +234,15 @@ Instance.new("UICorner", FOVDn).CornerRadius = UDim.new(0, 8)
 
 local FOVUp = Instance.new("TextButton")
 FOVUp.Size = UDim2.new(0, 70, 0, 34)
-FOVUp.Position = UDim2.new(1, -78, 0, 700)
+FOVUp.Position = UDim2.new(1, -78, 0, 790)
 FOVUp.BackgroundColor3 = Color3.fromRGB(50, 30, 15)
 FOVUp.Text = "+"
 FOVUp.TextColor3 = Color3.fromRGB(255, 255, 255)
 FOVUp.Font = Enum.Font.GothamBold
-FOVUp.TextSize = 20
-FOVUp.Parent = Scroll
+FOVDn.Parent = Scroll
 Instance.new("UICorner", FOVUp).CornerRadius = UDim.new(0, 8)
 
-local BChams = MakeBtn("Chams", 750, false)
-local BRainbow = MakeBtn("Modo Arcoíris", 796, false)
-
-local ColorLbl = Instance.new("TextLabel")
-ColorLbl.Size = UDim2.new(1, -8, 0, 22)
-ColorLbl.Position = UDim2.new(0, 4, 0, 850)
-ColorLbl.BackgroundTransparency = 1
-ColorLbl.Text = "— COLORES —"
-ColorLbl.Font = Enum.Font.GothamBold
-ColorLbl.TextSize = 14
-ColorLbl.TextColor3 = Color3.fromRGB(255, 200, 120)
-ColorLbl.Parent = Scroll
-
-local function MakeColorBtn(text, y, x, color)
-	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(0, 76, 0, 32)
-	b.Position = UDim2.new(0, x, 0, y)
-	b.BackgroundColor3 = color
-	b.Text = text
-	b.Font = Enum.Font.GothamBold
-	b.TextSize = 12
-	b.TextColor3 = Color3.fromRGB(255, 255, 255)
-	b.TextStrokeTransparency = 0.5
-	b.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	b.Parent = Scroll
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
-	return b
-end
-
-local CRojo = MakeColorBtn("Rojo", 882, 4, Color3.fromRGB(255, 40, 40))
-local CNaranja = MakeColorBtn("Naranja", 882, 88, Color3.fromRGB(255, 140, 0))
-local CAmarillo = MakeColorBtn("Amarillo", 882, 172, Color3.fromRGB(255, 220, 40))
-local CVerde = MakeColorBtn("Verde", 922, 4, Color3.fromRGB(40, 255, 90))
-local CCian = MakeColorBtn("Cian", 922, 88, Color3.fromRGB(40, 220, 255))
-local CAzul = MakeColorBtn("Azul", 922, 172, Color3.fromRGB(60, 110, 255))
-local CMorado = MakeColorBtn("Morado", 962, 4, Color3.fromRGB(180, 60, 255))
-local CRosa = MakeColorBtn("Rosa", 962, 88, Color3.fromRGB(255, 60, 200))
-local CBlanco = MakeColorBtn("Blanco", 962, 172, Color3.fromRGB(240, 240, 240))
-
+-- Funciones auxiliares
 local function Set(btn, state, name)
 	btn.Text = name .. (state and "  • ON" or "  • OFF")
 	btn.BackgroundColor3 = state and Color3.fromRGB(255, 120, 0) or Color3.fromRGB(50, 30, 15)
@@ -319,6 +254,7 @@ local function ApplyColor(c)
 	Set(BRainbow, false, "Modo Arcoíris")
 end
 
+-- Conexiones de botones
 BESP.MouseButton1Click:Connect(function() S.ESP = not S.ESP; Set(BESP, S.ESP, "ESP Master") end)
 BBox.MouseButton1Click:Connect(function() S.Box = not S.Box; Set(BBox, S.Box, "Caja 2D") end)
 BName.MouseButton1Click:Connect(function() S.Name = not S.Name; Set(BName, S.Name, "Nombres") end)
@@ -332,34 +268,26 @@ BKill.MouseButton1Click:Connect(function() S.AimKill = not S.AimKill; Set(BKill,
 BFOV.MouseButton1Click:Connect(function() S.ShowFOV = not S.ShowFOV; Set(BFOV, S.ShowFOV, "Mostrar FOV") end)
 BWall.MouseButton1Click:Connect(function() S.WallCheck = not S.WallCheck; Set(BWall, S.WallCheck, "WallCheck") end)
 BTeam.MouseButton1Click:Connect(function() S.TeamCheck = not S.TeamCheck; Set(BTeam, S.TeamCheck, "TeamCheck") end)
-
+BChams.MouseButton1Click:Connect(function()
+	S.Chams = not S.Chams
+	Set(BChams, S.Chams, "Chams")
+	if not S.Chams then
+		for _, plr in pairs(Players:GetPlayers()) do
+			if ChamsObjects[plr] then pcall(function() ChamsObjects[plr]:Destroy() end) end
+		end
+		table.clear(ChamsObjects)
+	end
+end)
+BRainbow.MouseButton1Click:Connect(function() S.Rainbow = not S.Rainbow; Set(BRainbow, S.Rainbow, "Modo Arcoíris") end)
 BAimPart.MouseButton1Click:Connect(function()
 	aimIndex = aimIndex % #AimPartsList + 1
 	S.AimPart = AimPartsList[aimIndex]
 	BAimPart.Text = "Apunta a: " .. AimPartNames[S.AimPart]
 end)
-
-BChams.MouseButton1Click:Connect(function()
-	S.Chams = not S.Chams
-	Set(BChams, S.Chams, "Chams")
-	if not S.Chams then for _, hl in pairs(ChamsObjects) do pcall(function() hl:Destroy() end) end end
-end)
-
-BRainbow.MouseButton1Click:Connect(function() S.Rainbow = not S.Rainbow; Set(BRainbow, S.Rainbow, "Modo Arcoíris") end)
-
-CRojo.MouseButton1Click:Connect(function() ApplyColor(Color3.fromRGB(255, 40, 40)) end)
-CNaranja.MouseButton1Click:Connect(function() ApplyColor(Color3.fromRGB(255, 140, 0)) end)
-CAmarillo.MouseButton1Click:Connect(function() ApplyColor(Color3.fromRGB(255, 220, 40)) end)
-CVerde.MouseButton1Click:Connect(function() ApplyColor(Color3.fromRGB(40, 255, 90)) end)
-CCian.MouseButton1Click:Connect(function() ApplyColor(Color3.fromRGB(40, 220, 255)) end)
-CAzul.MouseButton1Click:Connect(function() ApplyColor(Color3.fromRGB(60, 110, 255)) end)
-CMorado.MouseButton1Click:Connect(function() ApplyColor(Color3.fromRGB(180, 60, 255)) end)
-CRosa.MouseButton1Click:Connect(function() ApplyColor(Color3.fromRGB(255, 60, 200)) end)
-CBlanco.MouseButton1Click:Connect(function() ApplyColor(Color3.fromRGB(240, 240, 240)) end)
-
 FOVDn.MouseButton1Click:Connect(function() S.FOV = math.max(30, S.FOV - 10); FOVLbl.Text = "FOV: " .. S.FOV end)
 FOVUp.MouseButton1Click:Connect(function() S.FOV = math.min(400, S.FOV + 10); FOVLbl.Text = "FOV: " .. S.FOV end)
 
+-- Minimizar/Cerrar
 local minimized = false
 MinBtn.MouseButton1Click:Connect(function()
 	minimized = not minimized
@@ -371,17 +299,19 @@ end)
 local function Cleanup()
 	S.ESP, S.Aimbot, S.Rage, S.Legit, S.AimKill, S.Chams, S.Rainbow = false, false, false, false, false, false, false
 	if MainConnection then MainConnection:Disconnect(); MainConnection = nil end
-	pcall(function() if FOVCircle then FOVCircle.Visible = false; FOVCircle:Remove(); FOVCircle = nil end end)
-	for _, objs in pairs(ESPObjects) do for _, o in pairs(objs) do pcall(function() o.Visible = false; o:Remove() end) end end
+	if FOVCircle then pcall(function() FOVCircle.Visible = false; FOVCircle:Remove() end); FOVCircle = nil end
+	for _, plr in pairs(ESPObjects) do
+		if ESPObjects[plr] then for _, o in pairs(ESPObjects[plr]) do pcall(function() o:Remove() end) end end
+	end
 	for _, hl in pairs(ChamsObjects) do pcall(function() hl:Destroy() end) end
 	table.clear(ESPObjects); table.clear(ChamsObjects)
 end
-
 CloseBtn.MouseButton1Click:Connect(function() Cleanup(); gui:Destroy() end)
 
+-- Funciones principales
 local function IsEnemy(plr)
 	if not S.TeamCheck then return true end
-	if not LP.Team or not plr.Team then return true end
+	if not LP:FindFirstChild("Team") or not plr:FindFirstChild("Team") then return true end
 	return LP.Team ~= plr.Team
 end
 
@@ -389,18 +319,23 @@ local function IsVisible(part)
 	if not S.WallCheck then return true end
 	local origin = Camera.CFrame.Position
 	local rayParams = RaycastParams.new()
-	rayParams.FilterDescendantsInstances = {LP.Character, part.Parent}
+	rayParams.FilterDescendantsInstances = {LP.Character or {}, part.Parent}
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
-	return Workspace:Raycast(origin, part.Position - origin, rayParams) == nil
+	local dir = part.Position - origin
+	return Workspace:Raycast(origin, dir.Unit * dir.Magnitude, rayParams) == nil
+end
+
+local function GetBodyPart(char, name)
+	return char:FindFirstChild(name) or char:FindFirstChild(name.."Part") or char:FindFirstChild("Upper"..name) or char:FindFirstChild("Lower"..name)
 end
 
 local function GetTargetPart(char)
 	if S.AimPart == "Torso" then
-		return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
+		return GetBodyPart(char, "Torso") or char:FindFirstChild("HumanoidRootPart")
 	elseif S.AimPart == "Root" then
-		return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("Head")
+		return char:FindFirstChild("HumanoidRootPart") or GetBodyPart(char, "Torso")
 	else
-		return char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+		return GetBodyPart(char, "Head") or char:FindFirstChild("HumanoidRootPart")
 	end
 end
 
@@ -412,12 +347,13 @@ local function GetClosest()
 			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
 			if hum and hum.Health > 0 then
 				local part = GetTargetPart(plr.Character)
-				local head = plr.Character:FindFirstChild("Head") or part
 				if part then
 					local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
 					if onScreen then
 						local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-						if dist < best and IsVisible(head) then best = dist; closest = part end
+						if dist < best and IsVisible(part) then
+							best = dist; closest = part
+						end
 					end
 				end
 			end
@@ -426,14 +362,9 @@ local function GetClosest()
 	return closest
 end
 
-local function ClearESP(plr)
-	if ESPObjects[plr] then for _, o in pairs(ESPObjects[plr]) do pcall(function() o:Remove() end) end end
-	if ChamsObjects[plr] then pcall(function() ChamsObjects[plr]:Destroy() end) end
-	ESPObjects[plr] = nil; ChamsObjects[plr] = nil
-end
-
+-- Chams (usando Highlight que funciona en TODOS los juegos)
 local function UpdateChams(plr, char, color)
-	if not S.Chams then if ChamsObjects[plr] then pcall(function() ChamsObjects[plr]:Destroy() end) end return end
+	if not S.Chams then return end
 	local hl = ChamsObjects[plr] or Instance.new("Highlight")
 	hl.Name = "SensiChamsV2"
 	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -443,14 +374,23 @@ local function UpdateChams(plr, char, color)
 	hl.Parent = char
 	hl.FillColor = color
 	hl.OutlineColor = color
-	hl.Enabled = true
 	ChamsObjects[plr] = hl
 end
 
-local function CreateESP(plr)
-	if ESPObjects[plr] or not Drawing then return end
+-- Limpiar datos
+local function ClearPlayerData(plr)
+	if ESPObjects[plr] then
+		for _, o in pairs(ESPObjects[plr]) do pcall(function() o:Remove() end) end
+		ESPObjects[plr] = nil
+	end
+	if ChamsObjects[plr] then pcall(function() ChamsObjects[plr]:Destroy() end); ChamsObjects[plr] = nil end
+end
+
+-- Crear objetos Drawing
+local function CreatePlayerESP(plr)
+	if ESPObjects[plr] or not HasDrawing then return end
 	local t = {}
-	t.box = Drawing.new("Square"); t.box.Thickness = 1.5; t.box.Visible = false
+	t.box = Drawing.new("Square"); t.box.Thickness = 1.5; t.box.Visible = false; t.box.Filled = false
 	t.tracer = Drawing.new("Line"); t.tracer.Thickness = 1.2; t.tracer.Visible = false
 	t.name = Drawing.new("Text"); t.name.Size = 14; t.name.Center = true; t.name.Outline = true; t.name.Visible = false
 	t.dist = Drawing.new("Text"); t.dist.Size = 13; t.dist.Center = true; t.dist.Outline = true; t.dist.Visible = false
@@ -458,57 +398,54 @@ local function CreateESP(plr)
 	ESPObjects[plr] = t
 end
 
+-- Bucle principal
 MainConnection = RunService.RenderStepped:Connect(function()
 	Camera = Workspace.CurrentCamera
 	local currentColor = S.Rainbow and Color3.fromHSV((tick() * 0.4) % 1, 1, 1) or S.ESPColor
-
-	pcall(function()
-		if FOVCircle then
-			FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-			FOVCircle.Radius = S.FOV
-			FOVCircle.Color = currentColor
-			FOVCircle.Visible = S.ShowFOV and (S.Aimbot or S.Legit or S.Rage or S.AimKill)
-		end
-	end)
-
+	
+	-- Actualizar FOV
+	if HasDrawing then UpdateFOV() end
+	
+	-- Aimbot
 	if S.Aimbot or S.Legit or S.Rage or S.AimKill then
 		local target = GetClosest()
 		if target then
 			if S.Rage or S.AimKill then
 				Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
 			else
-				Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), S.Legit and 0.12 or 0.22)
+				Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), 0.15)
 			end
 		end
 	end
-
+	
+	-- Chams para todos los enemigos
 	for _, plr in pairs(Players:GetPlayers()) do
 		if plr ~= LP and plr.Character and IsEnemy(plr) then
 			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
 			if hum and hum.Health > 0 then
 				UpdateChams(plr, plr.Character, currentColor)
 			else
-				ClearESP(plr)
+				ClearPlayerData(plr)
 			end
-		else
-			ClearESP(plr)
+		elseif plr ~= LP then
+			ClearPlayerData(plr)
 		end
 	end
-
-	if not S.ESP then for plr in pairs(ESPObjects) do ClearESP(plr) end return end
-
+	
+	-- ESP con Drawing
+	if not S.ESP or not HasDrawing then return end
 	for _, plr in pairs(Players:GetPlayers()) do
 		if plr ~= LP and plr.Character and IsEnemy(plr) then
 			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
 			local root = plr.Character:FindFirstChild("HumanoidRootPart")
-			local head = plr.Character:FindFirstChild("Head")
+			local head = GetBodyPart(plr.Character, "Head")
 			if hum and hum.Health > 0 and root and head then
-				CreateESP(plr)
+				CreatePlayerESP(plr)
 				local o = ESPObjects[plr]
 				if o then
 					local pos, onScreen = Camera:WorldToViewportPoint(root.Position)
 					local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-					local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
+					local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 2.8, 0))
 					if onScreen then
 						local h = math.abs(headPos.Y - footPos.Y)
 						local w = h * 0.55
@@ -516,21 +453,26 @@ MainConnection = RunService.RenderStepped:Connect(function()
 						o.box.Position = Vector2.new(pos.X - w/2, pos.Y - h/2)
 						o.box.Color = currentColor
 						o.box.Visible = S.Box
+						
 						o.tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
 						o.tracer.To = Vector2.new(pos.X, pos.Y)
 						o.tracer.Color = currentColor
 						o.tracer.Visible = S.Tracer
+						
 						o.name.Text = plr.Name
-						o.name.Position = Vector2.new(pos.X, headPos.Y - 16)
+						o.name.Position = Vector2.new(pos.X, headPos.Y - 18)
 						o.name.Color = currentColor
 						o.name.Visible = S.Name
-						o.dist.Text = math.floor((root.Position - Camera.CFrame.Position).Magnitude) .. "m"
-						o.dist.Position = Vector2.new(pos.X, footPos.Y + 2)
+						
+						local dist = math.floor((root.Position - Camera.CFrame.Position).Magnitude)
+						o.dist.Text = dist .. "m"
+						o.dist.Position = Vector2.new(pos.X, footPos.Y + 4)
 						o.dist.Color = currentColor
 						o.dist.Visible = S.Dist
+						
 						local pct = math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1)
-						o.hp.From = Vector2.new(pos.X - w/2 - 5, pos.Y + h/2)
-						o.hp.To = Vector2.new(pos.X - w/2 - 5, pos.Y + h/2 - h * pct)
+						o.hp.From = Vector2.new(pos.X - w/2 - 6, pos.Y + h/2)
+						o.hp.To = Vector2.new(pos.X - w/2 - 6, pos.Y + h/2 - h * pct)
 						o.hp.Color = Color3.fromRGB(255 * (1 - pct), 255 * pct, 40)
 						o.hp.Visible = S.Health
 					else
@@ -539,13 +481,16 @@ MainConnection = RunService.RenderStepped:Connect(function()
 					end
 				end
 			else
-				ClearESP(plr)
+				ClearPlayerData(plr)
 			end
 		else
-			ClearESP(plr)
+			ClearPlayerData(plr)
 		end
 	end
 end)
 
-Players.PlayerRemoving:Connect(ClearESP)
-print("✅ SENSI CHAKA V2 cargado")
+Players.PlayerRemoving:Connect(ClearPlayerData)
+print("✅ SENSI CHAKA V2 • CARGADO CORRECTAMENTE")
+if not HasDrawing then
+	print("⚠️ Drawing no detectado - ESP 2D/FOV desactivados, Chams y Aimbot funcionan")
+end
