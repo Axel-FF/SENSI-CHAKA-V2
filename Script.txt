@@ -1,5 +1,5 @@
 -- ==============================================
--- SENSI CHAKA V2 • REPARADO UNIVERSAL
+-- SENSI CHAKA V2 • FOV AMPLIADO
 -- ==============================================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -23,10 +23,10 @@ pcall(function()
 	end
 end)
 
--- Detectar si tenemos Drawing
+-- Detectar Drawing
 local HasDrawing = pcall(function() return Drawing ~= nil end)
 
--- Crear GUI principal
+-- GUI principal
 local gui = Instance.new("ScreenGui")
 gui.Name = "SensiChakaV2"
 gui.ResetOnSpawn = false
@@ -79,12 +79,17 @@ local function PlayIntro()
 end
 task.spawn(PlayIntro)
 
--- Configuración
+-- CONFIGURACIÓN — FOV MÁXIMO AMPLIADO ✅
 local S = {
 	ESP = false, Box = true, Name = true, Dist = true, Health = true, Tracer = true,
 	ESPColor = Color3.fromRGB(255, 140, 0), Chams = false, Rainbow = false,
 	Aimbot = false, Legit = false, Rage = false, AimKill = false,
-	AimPart = "Head", FOV = 120, ShowFOV = true, WallCheck = true, TeamCheck = true
+	AimPart = "Head",
+	FOV = 120,          -- Valor inicial
+	FOV_MIN = 20,       -- Mínimo más pequeño
+	FOV_MAX = 1000,     -- MÁXIMO MUCHO MÁS GRANDE ✅
+	FOV_STEP = 15,      -- Cada clic sube/baja más rápido ✅
+	ShowFOV = true, WallCheck = true, TeamCheck = true
 }
 local AimPartsList = {"Head", "Torso", "Root"}
 local AimPartNames = {Head = "Cabeza", Torso = "Torso", Root = "Centro"}
@@ -92,13 +97,13 @@ local aimIndex = 1
 local ESPObjects, ChamsObjects = {}, {}
 local FOVCircle = nil
 
--- Círculo FOV
+-- Actualizar círculo FOV
 local function UpdateFOV()
 	if not HasDrawing then return end
 	if not FOVCircle then
 		FOVCircle = Drawing.new("Circle")
 		FOVCircle.Thickness = 1.5
-		FOVCircle.NumSides = 60
+		FOVCircle.NumSides = 80  -- Más lados para que se vea suave aunque sea muy grande
 		FOVCircle.Filled = false
 	end
 	local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
@@ -107,7 +112,7 @@ local function UpdateFOV()
 	FOVCircle.Visible = S.ShowFOV and (S.Aimbot or S.Legit or S.Rage or S.AimKill)
 end
 
--- Panel
+-- PANEL
 local Main = Instance.new("Frame")
 Main.Size = UDim2.new(0, 270, 0, 400)
 Main.Position = UDim2.new(0.5, -135, 0.5, -200)
@@ -239,7 +244,7 @@ FOVUp.BackgroundColor3 = Color3.fromRGB(50, 30, 15)
 FOVUp.Text = "+"
 FOVUp.TextColor3 = Color3.fromRGB(255, 255, 255)
 FOVUp.Font = Enum.Font.GothamBold
-FOVDn.Parent = Scroll
+FOVUp.Parent = Scroll
 Instance.new("UICorner", FOVUp).CornerRadius = UDim.new(0, 8)
 
 -- Funciones auxiliares
@@ -284,8 +289,16 @@ BAimPart.MouseButton1Click:Connect(function()
 	S.AimPart = AimPartsList[aimIndex]
 	BAimPart.Text = "Apunta a: " .. AimPartNames[S.AimPart]
 end)
-FOVDn.MouseButton1Click:Connect(function() S.FOV = math.max(30, S.FOV - 10); FOVLbl.Text = "FOV: " .. S.FOV end)
-FOVUp.MouseButton1Click:Connect(function() S.FOV = math.min(400, S.FOV + 10); FOVLbl.Text = "FOV: " .. S.FOV end)
+
+-- ✅ FOV corregido con límites más amplios y paso mayor
+FOVDn.MouseButton1Click:Connect(function()
+	S.FOV = math.max(S.FOV_MIN, S.FOV - S.FOV_STEP)
+	FOVLbl.Text = "FOV: " .. S.FOV
+end)
+FOVUp.MouseButton1Click:Connect(function()
+	S.FOV = math.min(S.FOV_MAX, S.FOV + S.FOV_STEP)
+	FOVLbl.Text = "FOV: " .. S.FOV
+end)
 
 -- Minimizar/Cerrar
 local minimized = false
@@ -362,7 +375,7 @@ local function GetClosest()
 	return closest
 end
 
--- Chams (usando Highlight que funciona en TODOS los juegos)
+-- Chams
 local function UpdateChams(plr, char, color)
 	if not S.Chams then return end
 	local hl = ChamsObjects[plr] or Instance.new("Highlight")
@@ -377,7 +390,6 @@ local function UpdateChams(plr, char, color)
 	ChamsObjects[plr] = hl
 end
 
--- Limpiar datos
 local function ClearPlayerData(plr)
 	if ESPObjects[plr] then
 		for _, o in pairs(ESPObjects[plr]) do pcall(function() o:Remove() end) end
@@ -386,7 +398,6 @@ local function ClearPlayerData(plr)
 	if ChamsObjects[plr] then pcall(function() ChamsObjects[plr]:Destroy() end); ChamsObjects[plr] = nil end
 end
 
--- Crear objetos Drawing
 local function CreatePlayerESP(plr)
 	if ESPObjects[plr] or not HasDrawing then return end
 	local t = {}
@@ -403,10 +414,8 @@ MainConnection = RunService.RenderStepped:Connect(function()
 	Camera = Workspace.CurrentCamera
 	local currentColor = S.Rainbow and Color3.fromHSV((tick() * 0.4) % 1, 1, 1) or S.ESPColor
 	
-	-- Actualizar FOV
 	if HasDrawing then UpdateFOV() end
 	
-	-- Aimbot
 	if S.Aimbot or S.Legit or S.Rage or S.AimKill then
 		local target = GetClosest()
 		if target then
@@ -418,7 +427,6 @@ MainConnection = RunService.RenderStepped:Connect(function()
 		end
 	end
 	
-	-- Chams para todos los enemigos
 	for _, plr in pairs(Players:GetPlayers()) do
 		if plr ~= LP and plr.Character and IsEnemy(plr) then
 			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
@@ -432,7 +440,6 @@ MainConnection = RunService.RenderStepped:Connect(function()
 		end
 	end
 	
-	-- ESP con Drawing
 	if not S.ESP or not HasDrawing then return end
 	for _, plr in pairs(Players:GetPlayers()) do
 		if plr ~= LP and plr.Character and IsEnemy(plr) then
@@ -490,7 +497,7 @@ MainConnection = RunService.RenderStepped:Connect(function()
 end)
 
 Players.PlayerRemoving:Connect(ClearPlayerData)
-print("✅ SENSI CHAKA V2 • CARGADO CORRECTAMENTE")
+print("✅ SENSI CHAKA V2 • FOV AMPLIADO CARGADO")
 if not HasDrawing then
-	print("⚠️ Drawing no detectado - ESP 2D/FOV desactivados, Chams y Aimbot funcionan")
+	print("⚠️ Drawing no detectado - Chams y Aimbot funcionan")
 end
